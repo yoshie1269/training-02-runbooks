@@ -30,3 +30,6 @@ git status
 git add
 git commit
 
+# Branch演習
+mainで編集
+ 046615e (mainで編集)
