@@ -20,3 +20,13 @@ git status
 
 
 ブランチ演習
+
+cd
+mkdir
+git init
+touch
+vi
+git status
+git add
+git commit
+
