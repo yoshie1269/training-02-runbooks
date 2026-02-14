@@ -12,4 +12,7 @@ git add README.md
 
 git status
 
-git commit 
+git commit
+
+
+ブランチ演習メイン 
