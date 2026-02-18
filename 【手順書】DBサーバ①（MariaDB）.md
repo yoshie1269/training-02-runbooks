@@ -88,6 +88,8 @@ sudo dnf install -y httpd wget php-fpm php-mysqli php-json php php-devel
 ### 確認方法とOKの目安
 ```bash
 dnf list installed | grep httpd
+```
+```bash
 dnf list installed | grep php
 ```
 
@@ -144,20 +146,22 @@ sudo systemctl start httpd
 ```bash
 sudo systemctl enable httpd
 ```
-```bash
-sudo systemctl is-enabled httpd
-```
 
 ---
 
 ### コマンドの意味
 - start：起動
 - enable：自動起動登録
-- is-enabled：設定確認
 
 ---
 
 ### 確認方法とOKの目安
+```bash
+sudo systemctl status httpd
+```
+```bash
+sudo systemctl is-enabled httpd
+```
 - active (running)
 - enabled と表示される
 
@@ -180,9 +184,7 @@ sudo usermod -a -G apache ec2-user
 ```bash
 exit
 ```
-```bash
-groups
-```
+ - sshでログイン
 
 ---
 
@@ -194,6 +196,9 @@ groups
 ---
 
 ### 確認方法とOKの目安
+```bash
+groups
+```
 - apache が表示される
 
 ---
@@ -213,10 +218,10 @@ groups
 sudo chown -R ec2-user:apache /var/www
 ```
 ```bash
-sudo chmod 2775 /var/www && find /var/www -type d -exec sudo chmod 2775 {} ;
+sudo find /var/www -type d -exec chmod 2775 {} \;
 ```
 ```bash
-find /var/www -type f -exec sudo chmod 0664 {} ;
+sudo find /var/www -type f -exec chmod 0664 {} \;
 ```
 
 ---
@@ -251,7 +256,7 @@ ls -ld /var/www
 
 ### 実行コマンド
 ```bash
-echo “” > /var/www/html/phpinfo.php
+echo '<?php phpinfo(); ?>' | sudo tee /var/www/html/phpinfo.php
 ```
 
 ---
@@ -259,7 +264,7 @@ echo “” > /var/www/html/phpinfo.php
 ### 確認方法
 
 ブラウザでアクセス
-`http://my.public.dns.amazonaws.com/phpinfo.php`
+`http://<パブリックIPアドレス>/phpinfo.php`
 
 ---
 

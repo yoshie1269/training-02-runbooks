@@ -147,13 +147,13 @@ mysql -u root -p
 
 ### SQL 設定
 ```bash
-CREATE USER ‘wordpress-user’@‘localhost’ IDENTIFIED BY ‘your_strong_password’;
+CREATE USER 'wordpress-user'@'localhost' IDENTIFIED BY '<パスワード>';
 ```
 ```bash
-CREATE DATABASE wordpress-db;
+CREATE DATABASE wordpress_db;
 ```
 ```bash
-GRANT ALL PRIVILEGES ON wordpress-db.* TO “wordpress-user”@“localhost”;
+GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress-user'@'localhost';
 ```
 ```bash
 FLUSH PRIVILEGES;
@@ -186,50 +186,113 @@ SELECT user,host FROM mysql.user;
 
 ---
 
-## 5. wp-config.php を作成する
+## 5. wp-config.php を作成する（修正版）
 
----
 
 ### この工程でしていること
-- WordPress と DB を接続する設定を行う
+- Apache が参照している DocumentRoot 配下に wp-config.php を作成する
+- WordPress と MariaDB を接続する設定を正しい値で反映する
+- 設定ミス（パス違い・タイポ）を防止する
+
+
+### 事前確認（重要）
+- Apache の DocumentRoot を確認する
+```bash
+ls -la /var/www/html
+```
+
+- WordPress が配置されている場所を確認する
+
+  → /var/www/html 配下に wp-config-sample.php が存在すること
+
+※ 必ず /var/www/html 配下のファイルを編集すること
 
 ---
 
-### 実行コマンド
+### 実行内容（フルパス指定で実施）
+
+- wp-config.php を作成する
 ```bash
-cp wordpress/wp-config-sample.php wordpress/wp-config.php
-```
+ cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+ ```
+
+- 編集対象ファイル
 ```bash
-vi wordpress/wp-config.php
+ vi /var/www/html/wp-config.php
 ```
 ---
 
-### 設定内容
+### 設定内容（DB作成時と完全一致させる）
+
+- DBで設定した内容を反映する
 ```bash
-define(‘DB_NAME’, ‘wordpress-db’);
-define(‘DB_USER’, ‘wordpress-user’);
-define(‘DB_PASSWORD’, ‘your_strong_password’);
+define('DB_NAME', 'wordpress_db');
+define('DB_USER', 'wordpress-user');
+define('DB_PASSWORD', 'yoshie');
+define('DB_HOST', 'localhost');
 ```
+※ 注意事項
+- ハイフン（-）とアンダースコア（_）を混在させない
+- DB_USER に @localhost は書かない
+- 全角クォート（‘ ’ “ ”）は使用しない
+- 必ず半角シングルクォート（'）を使用する
+
 ---
 
 ### セキュリティキー設定
 
 以下 URL で生成した値を貼り付ける：
-`https://api.wordpress.org/secret-key/1.1/salt/`
+https://api.wordpress.org/secret-key/1.1/salt/
 
----
+例：
+```bash
+define('AUTH_KEY',         '生成された値');
+define('SECURE_AUTH_KEY',  '生成された値');
+define('LOGGED_IN_KEY',    '生成された値');
+define('NONCE_KEY',        '生成された値');
+define('AUTH_SALT',        '生成された値');
+define('SECURE_AUTH_SALT', '生成された値');
+define('LOGGED_IN_SALT',   '生成された値');
+define('NONCE_SALT',       '生成された値');
+```
 
 ### 意味
 - DB 接続情報設定
+
+  → WordPress が MariaDB にログインするための情報
+
 - Cookie 暗号化強化
+
+  → ログイン情報の改ざん防止
+
+  → セッション保護
 
 ---
 
 ### 確認方法とOKの目安
-- 設定ミスなし
-- 構文エラーなし
+
+- 構文チェックを実施する
+```bash
+  php -l /var/www/html/wp-config.php
+```
+OK の目安：
+- No syntax errors detected と表示されること
+
+- DB接続テスト（任意だが推奨）
+
+  WordPress と同条件で DB 接続できること
 
 ---
+
+### トラブル時の確認ポイント
+
+Error establishing a database connection が出た場合：
+
+1. MariaDB が起動しているか
+2. DB が存在するか
+3. ユーザーが存在するか
+4. DB_USER のスペルミスがないか
+5. 編集したファイルが /var/www/html/wp-config.php か確認する
 
 ## 6. WordPress ファイルを配置する
 
@@ -311,7 +374,11 @@ sudo dnf install -y php8.1-gd
 ---
 
 ### 確認方法とOKの目安
-- php-gd が表示される
+```bash
+php -m | grep gd
+```
+- gd 表示されれば PHPに有効化されている
+
 
 ---
 
@@ -336,10 +403,10 @@ sudo chgrp -R apache /var/www
 sudo chmod 2775 /var/www
 ```
 ```bash
-find /var/www -type d -exec sudo chmod 2775 {} ;
+sudo find /var/www -type d -exec chmod 2775 {} \;
 ```
 ```bash
-find /var/www -type f -exec sudo chmod 0644 {} ;
+sudo find /var/www -type f -exec chmod 0644 {} \;
 ```
 ---
 
