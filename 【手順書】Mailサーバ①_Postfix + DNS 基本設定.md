@@ -95,6 +95,9 @@ systemctl status postfix
 ```bash
 systemctl start postfix
 ```
+```bash
+systemctl enable postfix
+```
 
 ---
 
@@ -107,7 +110,9 @@ systemctl start postfix
 ```bash
 systemctl status postfix
 ```
-
+```bash
+systemctl is-enabled postfix
+```
 - Active: active (running) が表示される
 
 ---
@@ -318,7 +323,9 @@ dnf install bind
 
 ### 実行コマンド
 ```bash
-cp /etc/named.conf /etc/named.conf.date "+%Y%m%d_%H%M%S".bak
+cp /etc/named.conf /etc/named.conf.date.`date "+%Y%m%d_%H%M%S"`.bak
+```
+```bash
 ls -l /etc | grep named
 ```
 
@@ -338,11 +345,18 @@ ls -l /etc | grep named
 vi /etc/named.conf
 ```
 
----
-
-### コメントアウト
+### 修正内容
+コメントアウト
+```bash
+#listen-on port 53 { 127.0.0.1; };
+#listen-on-v6 port 53 { ::1; };
+```
+変更
 ```bash
 allow-query { any; };
+```
+追記
+```bash
 zone "onishi.local" IN{
 type master;
 file "/var/named/onishi.local.zone";
@@ -449,7 +463,7 @@ vi /etc/systemd/resolved.conf
 
 ### 設定
 ```bash
-DNS=172.31.37.121
+DNS=<プライベートIPアドレス>
 ```
 
 ---
