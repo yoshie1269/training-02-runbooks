@@ -307,6 +307,7 @@ systemctl restart postfix
 - 設定変更を反映する
 
 ---
+## 10. bind をインストールする
 
 ### 実行コマンド
 ```bash
@@ -316,6 +317,9 @@ dnf install bind
 ---
 
 ### 確認方法とOKの目安
+```bash
+systemctl status named
+```
 - named.service が存在
 
 ---
