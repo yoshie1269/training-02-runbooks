@@ -314,13 +314,32 @@ systemctl restart postfix
 dnf install bind
 ```
 
+### 確認方法とOKの目安
+```bash
+systemctl status named
+```
+- named.service が存在
+
+
+### 実行コマンド
+```bash
+systemctl start named
+```
+```bash
+systemctl enable named
+```
+
 ---
 
 ### 確認方法とOKの目安
 ```bash
 systemctl status named
 ```
-- named.service が存在
+```bash
+systemctl is-enabled named
+```
+- active と表示される
+- enable と表示される
 
 ---
 
