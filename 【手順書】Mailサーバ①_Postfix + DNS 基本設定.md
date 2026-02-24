@@ -289,6 +289,9 @@ mydestination = $mydomain, $myhostname
 ---
 
 ### 確認方法とOKの目安
+```bash
+postfix check
+```
 - 文法ミスがない
 - 設定が反映されている
 
