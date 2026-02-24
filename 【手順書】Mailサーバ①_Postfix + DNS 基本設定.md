@@ -435,6 +435,23 @@ mail IN A 172.31.37.121
 
 ---
 
+### ゾーンファイル権限設定（重要）
+```bash
+chown root:named /var/named/onishi.local.zone
+```
+```bash
+chmod 640 /var/named/onishi.local.zone
+```
+```bash
+ls -l /var/named/onishi.local.zone
+```
+
+OK例：
+```bash
+-rw-r----- 1 root named ...
+```
+---
+
 ## 14. ゾーンチェックと起動
 
 ---
