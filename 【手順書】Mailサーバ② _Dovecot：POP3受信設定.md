@@ -70,7 +70,7 @@ dnf list installed | grep dovecot
 
 ### 実行コマンド
 ```bash
-cp /etc/dovecot/conf.d/10-ssl.conf /etc/dovecot/conf.d/10-ssl.conf.`date "+%Y%m%d_%H%M%S"`.bak
+cp /etc/dovecot/dovecot.conf /etc/dovecot/dovecot.conf.`date "+%Y%m%d_%H%M%S"`.bak
 ```
 
 ---
@@ -85,7 +85,7 @@ cp /etc/dovecot/conf.d/10-ssl.conf /etc/dovecot/conf.d/10-ssl.conf.`date "+%Y%m%
 
 ### 確認方法とOKの目安
 ```bash
-ls -l /etc/dovecot/conf.d/ | grep 10-ssl
+ls -l /etc/dovecot/ | grep dovecot
 ```
 - .bak ファイルが存在する
 
