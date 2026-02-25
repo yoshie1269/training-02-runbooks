@@ -1,40 +1,16 @@
-# SRXファイアウォール構築 手順書（Interface / Policy / NAT 設定）
+# SRX セキュリティ設定 手順書（Interface / Policy / NAT）
 
 ---
 
-# 概要
+# 構成概要
 
-本手順書では、Juniper SRX を用いて以下の設定を実施する。
-
-1. インターフェース設定
-2. セキュリティゾーン・ポリシー設定
-3. Destination NAT 設定
-4. Proxy ARP 設定
-5. 動作確認
-6. 便利コマンド
-
-構成は以下を想定する。
+本手順では、Juniper SRX を想定し、以下の構成を設定する。
 
 - ge-0/0/0：外側（untrust）
 - ge-0/0/1：内側（trust）
-
----
-
-# 構成図
-```bash
-        Internet
-            |
-    ge-0/0/0 (untrust)
-    172.31.0.10/24
-            |
-          SRX
-            |
-    ge-0/0/1 (trust)
-    172.31.1.10/24
-            |
-       内部サーバ
-    172.31.1.48
-```
+- trust ↔ untrust 間の通信制御
+- Destination NAT 設定
+- Proxy ARP 設定（AWS想定）
 
 ---
 
@@ -42,63 +18,74 @@
 
 ---
 
-## この工程でしていること
-
-- SRXの物理インターフェースにIPアドレスを設定
-- 外部側と内部側ネットワークを定義
-- ルーティングの基盤を作成
-
----
-
-## 操作モード
+## 構成図
 ```bash
-configure
+     [Internet]
+          |
+  ge-0/0/0 (untrust)
+  172.31.0.10/24
+          |
+      [ SRX ]
+          |
+  ge-0/0/1 (trust)
+  172.31.1.10/24
+          |
+    [ Internal LAN ]
 ```
 ---
 
-## 外部インターフェース設定
+## 設定コマンド
 ```bash
 set interfaces ge-0/0/0 unit 0 family inet address 172.31.0.10/24
 ```
-
-### 意味
-
-| 項目 | 説明 |
-|------|------|
-| ge-0/0/0 | 外部ポート |
-| unit 0 | 論理インターフェース |
-| family inet | IPv4 |
-| address | IP設定 |
-
----
-
-## 内部インターフェース設定
 ```bash
 set interfaces ge-0/0/1 unit 0 family inet address 172.31.1.10/24
 ```
----
-
-## 設定確認
 ```bash
 commit check
 ```
 ```bash
 commit
 ```
-### 意味
-
-| コマンド | 意味 |
-|----------|------|
-| commit check | 構文チェック |
-| commit | 設定反映 |
 
 ---
 
-## OKの目安
+## 各コマンドの意味
+
+### set interfaces ge-0/0/0 unit 0 family inet address 172.31.0.10/24
+
+| 部分 | 意味 |
+|------|------|
+| set | 設定追加 |
+| interfaces | インターフェース設定 |
+| ge-0/0/0 | 物理IF |
+| unit 0 | 論理IF |
+| family inet | IPv4設定 |
+| address | IPアドレス設定 |
+
+→ 外側インターフェースのIP設定
+
+---
+
+### commit check
+
+- 設定文法チェック
+- 実際には反映しない
+
+---
+
+### commit
+
+- 設定を本番反映
+
+---
+
+## 確認方法
 ```bash
-show interfaces terse
+run show interfaces terse
 ```
-- ge-0/0/0 と ge-0/0/1 が up
+### OKの目安
+- ge-0/0/0 と ge-0/0/1 にIPが表示
 
 ---
 
@@ -106,16 +93,7 @@ show interfaces terse
 
 ---
 
-# ゾーン作成
-
-## この工程でしていること
-
-- インターフェースを信頼ゾーン・非信頼ゾーンへ分類
-- 通信制御の基準を作る
-
----
-
-## 設定
+## ゾーン作成
 ```bash
 set security zones security-zone untrust interfaces ge-0/0/0.0
 ```
@@ -124,24 +102,19 @@ set security zones security-zone trust interfaces ge-0/0/1.0
 ```
 ---
 
-## 確認
-```bash
-show security zones
-```
-OK：
-- 各インターフェースがゾーンに属している
+## コマンドの意味
+
+| 部分 | 意味 |
+|------|------|
+| security zones | セキュリティゾーン |
+| security-zone | ゾーン名 |
+| interfaces | ゾーンへIF割当 |
+
+→ 外側を untrust、内側を trust と定義
 
 ---
 
-# トラフィック制御（ポリシー）
-
----
-
-## 内 → 外 通信許可
-
-### この工程でしていること
-
-- trust → untrust への通信を許可
+## 内→外 通信許可
 ```bash
 set security policies from-zone trust to-zone untrust policy trust_to_untrust match source-address any
 ```
@@ -156,7 +129,20 @@ set security policies from-zone trust to-zone untrust policy trust_to_untrust th
 ```
 ---
 
-## 外 → 内 通信許可
+## 各設定の意味
+
+| 項目 | 意味 |
+|------|------|
+| from-zone trust | 内側 |
+| to-zone untrust | 外側 |
+| match source-address any | 全送信元 |
+| match destination-address any | 全宛先 |
+| match application any | 全プロトコル |
+| then permit | 許可 |
+
+---
+
+## 外→内 通信許可
 ```bash
 set security policies from-zone untrust to-zone trust policy untrust_to_trust match source-address any
 ```
@@ -169,14 +155,13 @@ set security policies from-zone untrust to-zone trust policy untrust_to_trust ma
 ```bash
 set security policies from-zone untrust to-zone trust policy untrust_to_trust then permit
 ```
+
 ---
 
-## ポリシー確認
-```bash
-show security policies
-```
-OK：
-- 2方向ポリシー表示
+## 注意点
+
+- 本来は外→内は制限すべき
+- 演習用の全許可設定
 
 ---
 
@@ -189,67 +174,69 @@ commit
 ```
 ---
 
-# 3. NAT設定（Destination NAT）
+## 確認方法
+```bash
+run show security policies
+```
+### OKの目安
+- trust_to_untrust / untrust_to_trust が表示
 
 ---
 
-# NAT構成図
+# 3. Destination NAT 設定
+
+---
+
+## 構成図
 ```bash
-Internet
-   |
-52.26.109.29
-   |
-SRX ge-0/0/0
-   |
-172.31.1.48（内部サーバ）
+Internet → 172.31.0.150
+↓
+NAT変換
+↓
+172.31.1.48
 ```
 ---
 
-## 3-1 NATプール設定
-
-### この工程でしていること
-
-- 変換先アドレスを定義
+## NATプール作成
 ```bash
 set security nat destination pool pool_A address 172.31.1.48/32
 ```
+### 意味
+- 外部アクセスを内部172.31.1.48へ変換
+
 ---
 
-## 3-2 NATルール適用
-
-### 外部IFからの通信を対象
+## NATルール適用
 ```bash
 set security nat destination rule-set 1 from interface ge-0/0/0.0
 ```
-### マッチ条件
 ```bash
 set security nat destination rule-set 1 rule 1A match destination-address 172.31.0.150/32
 ```
-
-### NAT適用
 ```bash
 set security nat destination rule-set 1 rule 1A then destination-nat pool pool_A
 ```
 ---
 
-## 意味
+## 各意味
 
-| 項目 | 内容 |
+| 部分 | 意味 |
 |------|------|
-| rule-set | ルール集合 |
-| match | 変換前アドレス |
-| pool | 変換後内部IP |
+| rule-set 1 | ルールセット作成 |
+| from interface | どのIFからの通信か |
+| match destination-address | マッチする外部IP |
+| then destination-nat | 内部変換実行 |
 
 ---
 
-## 3-3 Proxy ARP設定（AWS必須）
-
-### この工程でしていること
-
-- SRXがEIPに対してARP応答する
+## Proxy ARP（AWS構成）
 ```bash
 set security nat proxy-arp interface ge-0/0/0.0 address 52.26.109.29
 ```
+### 意味
+- 外部IPに対しSRXがARP応答
+- AWSでElasticIP利用時に必要
+
 ---
 
 ## コミット
@@ -261,45 +248,20 @@ commit
 ```
 ---
 
-## 確認
+## 確認方法
 ```bash
-show security nat destination
+run show security nat destination
 ```
 ```bash
-show security nat proxy-arp
+run show security nat proxy-arp
 ```
----
-
-## OKの目安
-
-- NATルール表示
-- proxy-arp登録済み
+### OKの目安
+- pool_A表示
+- proxy-arp登録確認
 
 ---
 
-# 4. 動作確認
-
----
-
-## 内部から外部
-
-- ping外部
-- インターネット通信可能
-
----
-
-## 外部から内部
-
-- 52.26.109.29へアクセス
-- 内部172.31.1.48へ転送
-
----
-
-# 5. 便利コマンド
-
----
-
-## 設定をset形式で表示
+# 便利コマンド
 ```bash
 run show configuration | display set | no-more
 ```
@@ -307,54 +269,51 @@ run show configuration | display set | no-more
 
 ## 意味
 
-| コマンド | 内容 |
-|----------|------|
-| display set | set形式表示 |
-| no-more | ページ送り停止 |
+| 部分 | 内容 |
+|------|------|
+| show configuration | 現在設定表示 |
+| display set | set形式で表示 |
+| no-more | ページ送り無効 |
 
 ---
 
-## 削除時
+## 削除方法
 
-表示結果を元に
+出力結果を元に
 ```bash
 delete security nat destination rule-set 1
 ```
-などで削除可能
+などで即削除可能
 
 ---
 
-# トラブルシュート
+# 最終確認チェック
 
----
-
-## 通信できない場合
-
-- ゾーン未設定
-- ポリシー未設定
-- NAT未設定
-- Proxy-ARP未設定
-- commit忘れ
+- インターフェースIP設定済
+- ゾーン割当済
+- ポリシー反映済
+- NAT変換確認済
+- Proxy ARP登録済
+- commit成功
 
 ---
 
 # 本質理解
 
-| 概念 | 意味 |
+| 用語 | 意味 |
 |------|------|
-| Interface | ネットワーク境界 |
-| Zone | 信頼レベル分類 |
-| Policy | 通信許可条件 |
+| trust | 内側 |
+| untrust | 外側 |
+| Policy | 通信許可制御 |
 | NAT | アドレス変換 |
-| Proxy ARP | AWS特有必須設定 |
+| Proxy ARP | 代理応答 |
+| commit | 設定確定 |
 
 ---
 
 # 完了状態
 
-- インターフェース設定完了
-- trust/untrustゾーン設定完了
-- 双方向ポリシー設定完了
-- Destination NAT動作確認
-- Proxy ARP設定完了
-- commit反映済み
+- 内外通信可能
+- NAT変換動作
+- セキュリティポリシー反映
+- AWS環境対応済
