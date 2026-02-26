@@ -6,14 +6,14 @@
 ```bash
 [クライアント]
    ↓ SMTP(25)
-[Postfix（172.31.37.121）]
+[Postfix　<プライベートIPアドレス>　]
    ↓
 [ローカル配送 /var/spool/mail]
 ```
 ```bash
 [DNS(BIND)]
-mail.onishi.local → 172.31.37.121
-ns.onishi.local   → 172.31.37.121
+mail.onishi.local → <プライベートIPアドレス>
+ns.onishi.local   → <プライベートIPアドレス>
 ```
 ---
 
@@ -22,7 +22,7 @@ ns.onishi.local   → 172.31.37.121
 | 項目 | 内容 |
 |------|------|
 | OS | Amazon Linux / RHEL系 |
-| サーバIP | 172.31.37.121 |
+| サーバIP | <プライベートIPアドレス> |
 | ドメイン | onishi.local |
 | メールホスト | mail.onishi.local |
 
@@ -234,9 +234,9 @@ allow-query { any; };
 
 ### 追記
 ```bash
-zone “onishi.local” IN {
+zone "onishi.local" IN {
 type master;
-file “/var/named/onishi.local.zone”;
+file "/var/named/onishi.local.zone";
 };
 ```
 
@@ -261,17 +261,17 @@ vi /var/named/onishi.local.zone
 ```bash
 $TTL 3600
 @ IN SOA ns.onishi.local. test.gmail.com. (
-20210401
-3600
-3600
-3600
-3600 )
+20260226 ; serial
+3600 ; refresh
+3600 ; retry
+3600 ; expire
+3600 ) ; minimum
 
-IN NS ns.onishi.local.
-IN MX 10 mail.onishi.local.
+ IN NS ns.onishi.local.
+ IN MX 10 mail.onishi.local.
 
-ns   IN A 172.31.37.121
-mail IN A 172.31.37.121
+ns IN A <プライベートIPアドレス>
+mail IN A <プライベートIPアドレス>
 ```
 
 ---
@@ -289,13 +289,13 @@ mail IN A 172.31.37.121
 
 ## Aレコード重要ポイント
 
-mail IN A 172.31.37.121
+mail IN A <プライベートIPアドレス>
 
 意味：
-- mail.onishi.local → 172.31.37.121 に変換
+- mail.onishi.local → <プライベートIPアドレス> に変換
 - SMTP接続時にIP解決に使われる
 
-ns IN A 172.31.37.121
+ns IN A <プライベートIPアドレス>
 
 意味：
 - DNSサーバ自身のIP定義
@@ -353,7 +353,7 @@ vi /etc/systemd/resolved.conf
 
 追加：
 ```bash
-DNS=172.31.37.121
+DNS=<プライベートIPアドレス>
 ```
 
 ```bash
@@ -389,10 +389,10 @@ systemctl status rsyslog
 
 # 18. 自分宛メール送信テスト
 ```bash
-mail -s hello root@onishi.local
+mail -s <件名> root@onishi.local
 ```
 ```bash
-Hello
+<本文>
 .
 ```
 ---
@@ -425,18 +425,18 @@ mail
 ## この工程でしていること
 - ログイン不可のメール専用アカウント作成
 ```bash
-useradd yoshie -g mail -M -K MAIL_DIR=/dev/null -s /sbin/nologin
+useradd <ユーザ名> -g mail -M -K MAIL_DIR=/dev/null -s /sbin/nologin
 ```
 ```bash
-passwd yoshie
+passwd <ユーザ名>
 ```
 
 確認：
 ```bash
-id yoshie
+id <ユーザ名>
 ```
 ```bash
-passwd -S yoshie
+passwd -S <ユーザ名>
 ```
 OK：
 - PS表示
