@@ -93,7 +93,7 @@ protocols = pop3
 
 追記：
 ```bash
-mail_location = mail:/var/spool/mail/%u/
+mail_location = maildir:/var/spool/mail/%u/
 ```
 ---
 
@@ -112,7 +112,7 @@ mail_location = mail:/var/spool/mail/%u/
 
 ## 確認方法
 ```bash
-grep -nE ‘^(protocols|mail_location)’ /etc/dovecot/dovecot.conf
+grep -nE '^(protocols|mail_location)' /etc/dovecot/dovecot.conf
 ```
 OK目安：
 - protocols = pop3
@@ -124,9 +124,17 @@ OK目安：
 
 ## この工程でしていること
 - SSL設定変更前に退避
+
 ```bash
-cp /etc/dovecot/conf.d/10-ssl.conf /etc/dovecot/conf.d/10-ssl.conf.date "+%Y%m%d_%H%M%S".bak
+cp /etc/dovecot/conf.d/10-ssl.conf \
+/etc/dovecot/conf.d/10-ssl.conf.$(date +%Y%m%d_%H%M%S).bak
 ```
+
+確認：
+```bash
+ls -l /etc/dovecot/conf.d/ | grep 10-ssl
+```
+
 ---
 
 # 4. SSL必須設定を無効化（学習用）
@@ -146,13 +154,19 @@ ssl = required
 ```
 確認：
 ```bash
-grep -n ‘^#ssl = required’ /etc/dovecot/conf.d/10-ssl.conf
+grep -n '^#ssl = required' /etc/dovecot/conf.d/10-ssl.conf
 ```
 ---
 
 # 5. 10-auth.conf をバックアップ
 ```bash
-cp /etc/dovecot/conf.d/10-auth.conf /etc/dovecot/conf.d/10-auth.conf.date "+%Y%m%d_%H%M%S".bak
+cp /etc/dovecot/conf.d/10-auth.conf \
+/etc/dovecot/conf.d/10-auth.conf.$(date +%Y%m%d_%H%M%S).bak
+```
+
+確認：
+```bash
+ls -l /etc/dovecot/conf.d/10-auth.conf*
 ```
 ---
 
@@ -163,17 +177,20 @@ cp /etc/dovecot/conf.d/10-auth.conf /etc/dovecot/conf.d/10-auth.conf.date "+%Y%m
 ```bash
 vi /etc/dovecot/conf.d/10-auth.conf
 ```
+
 変更前：
 ```bash
 disable_plaintext_auth = yes
 ```
+
 変更後：
 ```bash
 disable_plaintext_auth = no
 ```
+
 確認：
 ```bash
-grep -n ‘^disable_plaintext_auth’ /etc/dovecot/conf.d/10-auth.conf
+grep -n '^disable_plaintext_auth' /etc/dovecot/conf.d/10-auth.conf
 ```
 ---
 
